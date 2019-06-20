@@ -30,12 +30,19 @@ float distBox2(vec3 p, float size, vec3 offset){
     return max(max(p.x, p.y), p.z);
 }
 
+float distCylinder(vec3 p, vec2 height){
+	vec2 d = abs(vec2(length(p.xz), p.y)) - height;
+	return min(max(d.x,d.y), 0.0) + length(max(d,0.));
+}
+
+float sdCone(vec3 p, vec2 c){
+	float q = length(p.xy);
+	return dot(normalize(c), vec2(q, p.z));
+}
+
 float distScene(vec3 p){
 	p.xz = rotate2d(time) * p.xz;
-	return min(
-        distBox2(p, .5, vec3(0.,1.,0.)),
-        distBox2(p, .3, vec3(0.,0.,0.))
-        );
+	return sdCone(p, vec2(1.,.2));
 }
 
 //-----------------------------------------------//
@@ -70,7 +77,7 @@ void main( void ) {
 		if(dist < 0.0001){
 			normal = getNormal(rayPos);
 			diffuse = clamp(dot(lightDir, rayPos), 0.1, 1.0);
-			color = min(vec3(0.,1.,0.), vec3(1.,0.3,0.3));
+            color = vec3(1.);
         	color = color * diffuse;
 			break;
 		}
