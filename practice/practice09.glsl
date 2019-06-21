@@ -8,28 +8,56 @@ uniform float time;
 uniform vec2 mouse;
 uniform vec2 resolution;
 
-mat2 rotate2d(float angle){
-    return mat2(
-        cos(angle),-sin(angle),
-        sin(angle),cos(angle));
+float sdBox(vec3 p, vec3 s){
+	p = abs(p) - s;
+	return max(max(p.x, p.y), p.z);
 }
 
-float distSphere(vec3 p){
-	float d = length(p) - 1.;
+vec3 foldX(vec3 p){
+	p.x = abs(p.x);
+	return p;
+}
+
+mat2 rotate(float a){
+	float s = sin(a);
+	float c = cos(a);
+	return mat2(c, s, -s, c);
+}
+
+vec2 foldRotate(in vec2 p, in float s){
+    float a = 3.14 / s - atan(p.x, p.y);
+    float n = 3.14 / s;
+    a = floor(a / n) * n;
+    p *= rotate(a);
+    return p;
+}
+
+float sdTree(vec3 p){
+    float scale = 0.6 * saturate(1.5 * sin(0.05 * time));
+    float width = mix(0.3 * scale, 0.0, saturate(p.y));
+	vec3 size = vec3(width, 1.0, width);
+	//変な向きのBOX
+	float d = sdBox(p, size);
+    for(int i = 0; i < 10; i++){
+        vec3 q = p;
+        q.x = abs(q.x);
+        q.y -= 0.5 * size.y;
+        q.xy *= rotate(-1.2);
+        d = min(d, sdBox(p, size));
+        p = q;
+        size *= scale;
+    }
 	return d;
 }
 
-float distBox(vec3 p, float s){
-    p = abs(p) - s;
-    return max(max(p.x, p.y), p.z);
+float sdSnowCrystal(inout vec3 p){
+    p.xy = foldRotate(p.xy, 6.0);
+    return sdTree(p);
 }
-
 
 //-----------------------------------------------//
 float distScene(vec3 p){
-	p.xz = rotate2d(time) * p.xz;
-	p.xy = rotate2d(2. * p.y) * p.xy;
-	return distBox(p, 1.);
+	return sdTree(p);
 }
 
 const float EPS = 0.01;

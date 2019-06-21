@@ -8,28 +8,39 @@ uniform float time;
 uniform vec2 mouse;
 uniform vec2 resolution;
 
-mat2 rotate2d(float angle){
-    return mat2(
-        cos(angle),-sin(angle),
-        sin(angle),cos(angle));
+float sdBox(vec3 p, vec3 s){
+	p = abs(p) - s;
+	return max(max(p.x, p.y), p.z);
 }
 
-float distSphere(vec3 p){
-	float d = length(p) - 1.;
+vec3 foldX(vec3 p){
+	p.x = abs(p.x);
+	return p;
+}
+
+mat2 rotate(float a){
+	float s = sin(a);
+	float c = cos(a);
+	return mat2(c, s, -s, c);
+}
+
+float sdTree(vec3 p){
+	vec3 size = vec3(0.1, 1.0, 0.1);
+	//変な向きのBOX
+	float d = sdBox(p, size);
+	//-xの領域でも、+xと同じレンダリングをする。
+	p = foldX(p);
+	p.y -= 0.1;
+	p.xy *= rotate(-1.2);
+	//どっちもレンダリングする。
+	//maxにすると、重なっているところだけレンダリングする。
+	d = min(d, sdBox(p, size));
 	return d;
 }
 
-float distBox(vec3 p, float s){
-    p = abs(p) - s;
-    return max(max(p.x, p.y), p.z);
-}
-
-
 //-----------------------------------------------//
 float distScene(vec3 p){
-	p.xz = rotate2d(time) * p.xz;
-	p.xy = rotate2d(2. * p.y) * p.xy;
-	return distBox(p, 1.);
+	return sdTree(p);
 }
 
 const float EPS = 0.01;
