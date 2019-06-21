@@ -32,6 +32,42 @@ vec2 foldRotate(in vec2 p, in float s){
     return p;
 }
 
+#define onRep(p, interval) (mod(p, interval) - 0.5 * interval)
+#define onRepLimit(p, interval, limit) (mod(clamp(p, -limit, limit), interval) - 0.5 * interval);
+
+float sdWing(in vec3 p){
+    float t = time;
+    float l = length(p.xz);
+    float fusion = gauss(time * 2.0);
+
+    float a = 0.1 + 0.06 *(1.0 + sin(3.14 * t + l));
+    float b = min(0.2 * t, 10.0) * gauss(l) + 0.1 * fusion * hWave(p.xz, t);
+    p.y += -b + 15.0;
+    
+    vec3 p1 = p;
+    p1.xz = onRepLimit(p.xz, 1.0, 20.0);
+
+    vec3 p2 = p;
+    p2 = onRep(p, 0.5);
+
+    float d = sdBox(p1, vec3(0.2 + a * 3.0, 12.0 - a, 0.2 +a));
+    d = min(d, sdBox(p1, vec3(0.4 - a, 13.0 - 4.0 * a, 0.1 + a)));
+    d = max(d, -sdBox(p1, vec3(0.3 - a, 14.0 - 4.0 * a, a)));
+    d = max(d, -sdBox(p2, vec3(0.8 * a, 1.0 - a, 0.8 * a)));
+    return d;
+}
+
+float sdUfo(inout vec3 p){
+    float t = max(time * 0.5, 1.0);
+    float t1 = floor(t);
+    float t2 = t1 + easeInOutCubic(t, -t1);
+
+    p.xz = foldRotate(p.xz, min(t2, 10.0));
+    p.z -= 0.5;
+    float d = sdWing(p);
+    return d;
+}
+
 float sdTree(vec3 p){
     float scale = 0.6 * saturate(1.5 * sin(0.05 * time));
     float width = mix(0.3 * scale, 0.0, saturate(p.y));
@@ -57,7 +93,7 @@ float sdSnowCrystal(inout vec3 p){
 
 //-----------------------------------------------//
 float distScene(vec3 p){
-	return sdSnowCrystal(p);
+	return sdUfo(p);
 }
 
 const float EPS = 0.01;
